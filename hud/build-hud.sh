@@ -6,8 +6,13 @@ APP_NAME="Elemental HUD.app"
 OUT_APP="${1:-$HOME/Applications/$APP_NAME}"
 CONTENTS="$OUT_APP/Contents"
 MACOS_DIR="$CONTENTS/MacOS"
+RES_DIR="$CONTENTS/Resources"
 
-mkdir -p "$MACOS_DIR"
+mkdir -p "$MACOS_DIR" "$RES_DIR"
+
+if [[ -f "$ROOT_DIR/hud/AppIcon.icns" ]]; then
+  cp "$ROOT_DIR/hud/AppIcon.icns" "$RES_DIR/AppIcon.icns"
+fi
 
 swiftc \
   -O \
@@ -24,6 +29,8 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
 <dict>
   <key>CFBundleExecutable</key>
   <string>ElementalHUD</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
   <string>com.shadman.elemental-hud</string>
   <key>CFBundleName</key>
