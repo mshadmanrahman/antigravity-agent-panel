@@ -93,13 +93,23 @@ function isPidAlive(pid) {
   }
 }
 
-function discoverLanguageServer(appDirs) {
-  if (process.env.ANTIGRAVITY_LS_ADDRESS && process.env.ANTIGRAVITY_CSRF_TOKEN) {
-    return {
-      address: process.env.ANTIGRAVITY_LS_ADDRESS,
-      csrfToken: process.env.ANTIGRAVITY_CSRF_TOKEN,
-    };
+function discoverLanguageServers(appDirs) {
+  const candidates = [];
+  const seen = new Set();
+  const push = (address, csrfToken) => {
+    if (!address || !csrfToken || seen.has(address)) return;
+    seen.add(address);
+    candidates.push({ address, csrfToken });
+  };
+
+  if (
+    (!process.env.AGENT_PANEL_STANDALONE || process.env.AGENT_PANEL_FORCE_ENV_LS) &&
+    process.env.ANTIGRAVITY_LS_ADDRESS &&
+    process.env.ANTIGRAVITY_CSRF_TOKEN
+  ) {
+    push(process.env.ANTIGRAVITY_LS_ADDRESS, process.env.ANTIGRAVITY_CSRF_TOKEN);
   }
+
   const files = [];
   for (const dir of appDirs) {
     const daemonDir = join(dir, 'daemon');
@@ -123,43 +133,57 @@ function discoverLanguageServer(appDirs) {
       const info = JSON.parse(readFileSync(p, 'utf-8'));
       if (!info.httpPort || !info.csrfToken) continue;
       if (info.pid && !isPidAlive(Number(info.pid))) continue;
-      return { address: `127.0.0.1:${info.httpPort}`, csrfToken: info.csrfToken };
+      push(`127.0.0.1:${info.httpPort}`, info.csrfToken);
     } catch {
       // Ignore torn or unreadable daemon files.
     }
   }
-  return null;
+  return candidates;
 }
 
+const MAX_STALE_RPC_MS = 30_000;
 const rpcCache = new Map();
-async function callLsRpc(ls, method, body = {}, ttlMs = 2000) {
-  if (!ls) return null;
-  const key = `${ls.address}:${method}`;
+async function callLsRpc(candidates, method, body = {}, ttlMs = 2000) {
+  const list = Array.isArray(candidates) ? candidates : candidates ? [candidates] : [];
+  if (!list.length) return null;
   const now = Date.now();
-  const cached = rpcCache.get(key);
-  if (cached && now - cached.at < ttlMs) return cached.data;
-
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 2500);
-  try {
-    const res = await fetch(`http://${ls.address}/exa.language_server_pb.LanguageServerService/${method}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-codeium-csrf-token': ls.csrfToken,
-      },
-      body: JSON.stringify(body),
-      signal: ctrl.signal,
-    });
-    if (!res.ok) return cached?.data ?? null;
-    const data = await res.json();
-    rpcCache.set(key, { at: now, data });
-    return data;
-  } catch {
-    return cached?.data ?? null;
-  } finally {
-    clearTimeout(timer);
+  const cached = rpcCache.get(method);
+  if (cached && now - cached.at < ttlMs && list.some((c) => c.address === cached.address)) {
+    return cached.data;
   }
+
+  // Try the last known-good address first if still present in candidates.
+  const ordered = cached?.address
+    ? [...list].sort((a, b) => (b.address === cached.address ? 1 : 0) - (a.address === cached.address ? 1 : 0))
+    : list;
+
+  for (const ls of ordered) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2500);
+    try {
+      const res = await fetch(`http://${ls.address}/exa.language_server_pb.LanguageServerService/${method}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-codeium-csrf-token': ls.csrfToken,
+        },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      rpcCache.set(method, { at: now, address: ls.address, data });
+      return data;
+    } catch {
+      // Try next LS candidate.
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  if (cached && now - cached.at < MAX_STALE_RPC_MS) return cached.data;
+  rpcCache.delete(method);
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -186,15 +210,77 @@ function summarizePoolName(families) {
   return uniq.slice(0, 2).join(' / ');
 }
 
-function buildQuotaSnapshot(userStatus, now) {
-  const us = userStatus?.userStatus;
-  if (!us) return null;
-  const planInfo = us.planStatus?.planInfo || {};
-  const configs = us.cascadeModelConfigData?.clientModelConfigs || [];
+function buildBucketMetrics(remainingFraction, resetTime, isWeekly, now) {
+  const resetMs = Date.parse(resetTime);
+  const leftMs = Math.max(0, Number.isFinite(resetMs) ? resetMs - now : 0);
+  const windowMs = isWeekly ? Math.max(WEEK_MS, leftMs) : Math.max(FIVE_HOURS_MS, leftMs);
+  const elapsedFrac = Math.min(1, Math.max(0.01, 1 - leftMs / windowMs));
+  const clampedFrac = Math.max(0, Math.min(1, Number(remainingFraction) || 0));
+  const remainingPct = Math.round(clampedFrac * 1000) / 10;
+  const usedPct = Math.round((100 - remainingPct) * 10) / 10;
+  const elapsedPct = Math.round(elapsedFrac * 100);
+  const pace = Math.round((usedPct / Math.max(1, elapsedPct)) * 100) / 100;
+  const verdict =
+    usedPct < 0.2
+      ? 'fresh'
+      : pace > 1.15
+        ? 'over pace'
+        : pace > 1.0
+          ? 'ahead of pace'
+          : pace < 0.85
+            ? 'under pace'
+            : 'on pace';
 
+  return {
+    windowLabel: isWeekly ? '7d' : '5h',
+    usedPct,
+    remainingPct,
+    elapsedPct,
+    pace,
+    verdict,
+    resetTime: resetTime || null,
+    leftMs,
+  };
+}
+
+function classifySummaryGroup(group) {
+  const text = `${group?.displayName || ''} ${group?.description || ''} ${(group?.buckets || []).map((b) => b.bucketId).join(' ')}`.toLowerCase();
+  if (text.includes('argon')) return { name: 'Argon', models: ['Argon'] };
+  if (text.includes('claude') || text.includes('gpt') || text.includes('3p')) {
+    return { name: 'Claude / OSS', models: ['Claude Opus', 'Claude Sonnet', 'GPT-OSS'] };
+  }
+  return { name: 'Hydrogen / Flash', models: ['Hydrogen', '3.8 Flash'] };
+}
+
+function parseQuotaSummary(quotaSummary, now) {
+  const groups = quotaSummary?.response?.groups;
+  if (!Array.isArray(groups) || !groups.length) return null;
+
+  const byPool = new Map();
+  for (const g of groups) {
+    const { name, models } = classifySummaryGroup(g);
+    const entry = byPool.get(name) || { name, models, short: null, weekly: null };
+    for (const b of g.buckets || []) {
+      if (typeof b.remainingFraction !== 'number' || !b.resetTime) continue;
+      const isWeekly = String(b.window || '').toLowerCase() === 'weekly' || String(b.bucketId || '').includes('weekly');
+      const metrics = buildBucketMetrics(b.remainingFraction, b.resetTime, isWeekly, now);
+      if (isWeekly) entry.weekly = { ...metrics, models };
+      else entry.short = { ...metrics, models };
+    }
+    byPool.set(name, entry);
+  }
+  return byPool;
+}
+
+function buildQuotaSnapshot(userStatus, quotaSummary, now) {
+  const us = userStatus?.userStatus;
+  const summaryMap = parseQuotaSummary(quotaSummary, now);
+  if (!us && !summaryMap) return null;
+
+  const planInfo = us?.planStatus?.planInfo || {};
+  const configs = us?.cascadeModelConfigData?.clientModelConfigs || [];
   const pools = new Map();
   const unavailable = [];
-  const models = [];
 
   for (const cfg of configs) {
     const label = cfg.label || cfg.modelOrAlias?.model || 'Unknown';
@@ -203,13 +289,6 @@ function buildQuotaSnapshot(userStatus, now) {
       if (cfg.tagTitle === 'Unavailable') unavailable.push(label);
       continue;
     }
-    models.push({
-      label,
-      id: cfg.modelOrAlias?.model || '',
-      remainingFraction: q.remainingFraction,
-      resetTime: q.resetTime,
-      tag: cfg.tagTitle || null,
-    });
     const fracBucket = Math.round(q.remainingFraction * 10000);
     const poolKey = `${q.resetTime}|${fracBucket}`;
     if (!pools.has(poolKey)) {
@@ -217,47 +296,34 @@ function buildQuotaSnapshot(userStatus, now) {
         resetTime: q.resetTime,
         remainingFraction: q.remainingFraction,
         families: [],
-        labels: [],
       });
     }
-    const p = pools.get(poolKey);
-    p.families.push(familyOf(label));
-    p.labels.push(label);
+    pools.get(poolKey).families.push(familyOf(label));
   }
 
   const quotaPools = [];
-  for (const p of pools.values()) {
-    const resetMs = Date.parse(p.resetTime);
-    const leftMs = Math.max(0, Number.isFinite(resetMs) ? resetMs - now : 0);
-    const isWeekly = leftMs > 24 * 3600 * 1000;
-    const windowMs = isWeekly ? Math.max(WEEK_MS, leftMs) : Math.max(FIVE_HOURS_MS, leftMs);
-    const elapsedFrac = Math.min(1, Math.max(0.01, 1 - leftMs / windowMs));
-    const usedPct = Math.max(0, Math.min(100, (1 - p.remainingFraction) * 100));
-    const elapsedPct = elapsedFrac * 100;
-    const pace = usedPct / elapsedPct;
-    const verdict =
-      usedPct < 0.2
-        ? 'fresh'
-        : pace > 1.15
-          ? 'over pace'
-          : pace > 1.0
-            ? 'ahead of pace'
-            : pace < 0.85
-              ? 'under pace'
-              : 'on pace';
-
-    quotaPools.push({
-      name: summarizePoolName(p.families),
-      windowLabel: isWeekly ? '7d' : '5h',
-      usedPct: Math.round(usedPct * 10) / 10,
-      remainingPct: Math.round(p.remainingFraction * 1000) / 10,
-      elapsedPct: Math.round(elapsedPct),
-      pace: Math.round(pace * 100) / 100,
-      verdict,
-      resetTime: p.resetTime,
-      leftMs,
-      models: [...new Set(p.families)],
-    });
+  if (summaryMap) {
+    for (const entry of summaryMap.values()) {
+      const primary = entry.short || entry.weekly;
+      if (!primary) continue;
+      quotaPools.push({
+        name: entry.name,
+        ...primary,
+        weekly: entry.weekly ? { ...entry.weekly } : null,
+      });
+    }
+  } else {
+    for (const p of pools.values()) {
+      const resetMs = Date.parse(p.resetTime);
+      const leftMs = Math.max(0, Number.isFinite(resetMs) ? resetMs - now : 0);
+      const isWeekly = leftMs > 24 * 3600 * 1000;
+      quotaPools.push({
+        name: summarizePoolName(p.families),
+        ...buildBucketMetrics(p.remainingFraction, p.resetTime, isWeekly, now),
+        models: [...new Set(p.families)],
+        weekly: null,
+      });
+    }
   }
 
   // Put active-use or short-window pools first, then weekly pools.
@@ -265,8 +331,8 @@ function buildQuotaSnapshot(userStatus, now) {
 
   return {
     planName: planInfo.planName || 'Pro',
-    promptCredits: us.planStatus?.availablePromptCredits ?? null,
-    flowCredits: us.planStatus?.availableFlowCredits ?? null,
+    promptCredits: us?.planStatus?.availablePromptCredits ?? null,
+    flowCredits: us?.planStatus?.availableFlowCredits ?? null,
     monthlyPromptCredits: planInfo.monthlyPromptCredits ?? null,
     monthlyFlowCredits: planInfo.monthlyFlowCredits ?? null,
     pools: quotaPools,
@@ -407,12 +473,24 @@ function buildWeeklyQuotaView(appDirs, quota, now) {
   const weekElapsedPct = Math.max(1, Math.min(100, Math.round(((now - monStart) / WEEK_MS) * 100)));
 
   const pools = (quota.pools || []).map((p) => {
+    const tokens7d = rollup.byPool[p.name] || 0;
+    if (p.weekly) {
+      return {
+        ...p.weekly,
+        name: p.name,
+        tokens7d,
+        cycles7d: 1,
+        source: 'native',
+        note: `${p.weekly.remainingPct}% left · ${p.weekly.elapsedPct}% wk elapsed`,
+      };
+    }
     if (p.windowLabel === '7d') {
       return {
         ...p,
-        tokens7d: rollup.byPool[p.name] || 0,
+        tokens7d,
         cycles7d: 1,
-        note: `${p.usedPct}% / ${p.elapsedPct}% wk`,
+        source: 'native',
+        note: `${p.remainingPct}% left · ${p.elapsedPct}% wk elapsed`,
       };
     }
 
@@ -424,7 +502,6 @@ function buildWeeklyQuotaView(appDirs, quota, now) {
     const sumUsed = cycles.length
       ? Math.round(cycles.reduce((s, c) => s + (c.maxUsedPct || 0), 0) * 10) / 10
       : p.usedPct;
-    const tokens7d = rollup.byPool[p.name] || 0;
     const meterPct = Math.min(100, avgUsed);
     const ratio = meterPct / Math.max(1, p.elapsedPct);
     const verdict =
@@ -448,6 +525,7 @@ function buildWeeklyQuotaView(appDirs, quota, now) {
       cycles7d: Math.max(1, cycles.length),
       tokens7d,
       verdict,
+      source: 'ledger',
       note: `${cycles.length || 1}x 5h · avg ${avgUsed}%`,
     };
   });
@@ -631,10 +709,10 @@ function parseTranscriptLines(text) {
       }
     }
 
-    if (step.type === 'GENERIC' && typeof step.content === 'string') {
+    if (pendingSubagentDefs.length && step.type === 'GENERIC' && typeof step.content === 'string') {
       const matches = [...step.content.matchAll(/"conversationId"\s*:\s*"([0-9a-f-]{8,})"/gi)];
       if (matches.length) {
-        for (let i = 0; i < matches.length; i++) {
+        for (let i = 0; i < matches.length && pendingSubagentDefs.length; i++) {
           const cid = matches[i][1];
           const def = pendingSubagentDefs.shift() || {};
           if (!subagents.has(cid)) {
@@ -697,9 +775,9 @@ function rolePersonaFromText(text) {
   return 'developer';
 }
 
-function buildPanelSnapshot(appDirs, convId, userStatus, trajectoriesResp, now) {
+function buildPanelSnapshot(appDirs, convId, userStatus, quotaSummary, trajectoriesResp, now) {
   const trajectories = trajectoriesResp?.trajectorySummaries || {};
-  const quota = buildQuotaSnapshot(userStatus, now);
+  const quota = buildQuotaSnapshot(userStatus, quotaSummary, now);
   if (quota) {
     quota.weekly = buildWeeklyQuotaView(appDirs, quota, now);
   }
@@ -812,6 +890,7 @@ function buildPanelSnapshot(appDirs, convId, userStatus, trajectoriesResp, now) 
   const otherRunning = [];
   for (const [id, t] of Object.entries(trajectories)) {
     if (knownIds.has(id)) continue;
+    if (t.trajectoryMetadata?.parentConversationId) continue;
     if (t.status === 'CASCADE_RUN_STATUS_RUNNING') {
       otherRunning.push({
         id,
@@ -844,13 +923,20 @@ function buildPanelSnapshot(appDirs, convId, userStatus, trajectoriesResp, now) 
 
 function pickActiveConversation(trajectoriesResp) {
   const summaries = trajectoriesResp?.trajectorySummaries || {};
-  const entries = Object.entries(summaries).filter(([, t]) => t && typeof t === 'object');
-  if (!entries.length) return '';
+  const all = Object.entries(summaries).filter(([, t]) => t && typeof t === 'object');
+  if (!all.length) return '';
+  const topLevel = all.filter(([, t]) => !t.trajectoryMetadata?.parentConversationId);
+  const entries = topLevel.length ? topLevel : all;
+  const activityTs = (t) =>
+    Math.max(
+      Date.parse(t.annotations?.lastUserViewTime || '') || 0,
+      Date.parse(t.lastModifiedTime || '') || 0,
+    );
   entries.sort((a, b) => {
     const aRun = a[1].status === 'CASCADE_RUN_STATUS_RUNNING' ? 1 : 0;
     const bRun = b[1].status === 'CASCADE_RUN_STATUS_RUNNING' ? 1 : 0;
     if (aRun !== bRun) return bRun - aRun;
-    return (Date.parse(b[1].lastModifiedTime || '') || 0) - (Date.parse(a[1].lastModifiedTime || '') || 0);
+    return activityTs(b[1]) - activityTs(a[1]);
   });
   return entries[0][0];
 }
@@ -875,16 +961,15 @@ async function start() {
   const handlePanel = async (query) => {
     const now = Date.now();
     const appDirs = findAllAppDataDirs();
-    const ls = discoverLanguageServer(appDirs);
-    const [userStatus, trajectoriesResp] = await Promise.all([
-      callLsRpc(ls, 'GetUserStatus', {}, 8000),
-      callLsRpc(ls, 'GetAllCascadeTrajectories', {}, 1500),
+    const lsCandidates = discoverLanguageServers(appDirs);
+    const [userStatus, quotaSummary, trajectoriesResp] = await Promise.all([
+      callLsRpc(lsCandidates, 'GetUserStatus', {}, 8000),
+      callLsRpc(lsCandidates, 'RetrieveUserQuotaSummary', {}, 8000),
+      callLsRpc(lsCandidates, 'GetAllCascadeTrajectories', {}, 1500),
     ]);
-    const conv =
-      query.conversationId ||
-      process.env.ANTIGRAVITY_CONVERSATION_ID ||
-      pickActiveConversation(trajectoriesResp);
-    return buildPanelSnapshot(appDirs, conv, userStatus, trajectoriesResp, now);
+    const envConv = process.env.AGENT_PANEL_STANDALONE ? '' : process.env.ANTIGRAVITY_CONVERSATION_ID;
+    const conv = query.conversationId || envConv || pickActiveConversation(trajectoriesResp);
+    return buildPanelSnapshot(appDirs, conv, userStatus, quotaSummary, trajectoriesResp, now);
   };
 
   if (SidecarApp && ResponseCtor) {

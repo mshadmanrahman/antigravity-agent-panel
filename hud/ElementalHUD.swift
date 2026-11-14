@@ -110,6 +110,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             proc.arguments = [mainMjs]
         }
         var env = ProcessInfo.processInfo.environment
+        for key in [
+            "ANTIGRAVITY_LS_ADDRESS",
+            "ANTIGRAVITY_CSRF_TOKEN",
+            "ANTIGRAVITY_LS_VERSION",
+            "ANTIGRAVITY_CONVERSATION_ID",
+            "ANTIGRAVITY_TRAJECTORY_ID",
+            "ANTIGRAVITY_PROJECT_ID"
+        ] {
+            env.removeValue(forKey: key)
+        }
         env["AGENT_PANEL_STANDALONE"] = "1"
         env["PORT"] = "\(hudPort)"
         proc.environment = env

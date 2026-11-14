@@ -37,11 +37,11 @@
     if (m >= 1440) {
       const d = Math.floor(m / 1440);
       const h = Math.floor((m % 1440) / 60);
-      return `${d}d ${h}h`;
+      return h ? `${d}d ${h}h` : `${d}d`;
     }
     const h = Math.floor(m / 60);
     const rem = m % 60;
-    return h ? `${h}h ${rem}m` : `${rem}m`;
+    return h ? (rem ? `${h}h ${rem}m` : `${h}h`) : `${rem}m`;
   };
 
   function syncThemeFromBackground() {
@@ -80,19 +80,20 @@
     return res.json();
   }
 
-  function verdictClass(verdict) {
-    if (verdict === 'over pace') return 'over';
-    if (verdict === 'ahead of pace') return 'ahead';
-    if (verdict === 'under pace') return 'under';
-    if (verdict === 'on pace') return 'on';
-    return 'fresh';
+  function quotaStatus(pool) {
+    const rem = typeof pool?.remainingPct === 'number' ? pool.remainingPct : 100;
+    const used = typeof pool?.usedPct === 'number' ? pool.usedPct : 0;
+    if (rem <= 15) return { text: 'critical', cls: 'over' };
+    if (rem <= 40) return { text: 'low', cls: 'ahead' };
+    if (used < 0.2) return { text: 'fresh', cls: 'fresh' };
+    return { text: 'healthy', cls: 'under' };
   }
 
-  function barColor(verdict) {
-    if (verdict === 'over pace') return 'var(--ap-danger)';
-    if (verdict === 'ahead of pace') return 'var(--ap-warning)';
-    if (verdict === 'under pace') return 'var(--ap-success)';
-    return 'var(--ap-primary)';
+  function barColor(pool) {
+    const rem = typeof pool?.remainingPct === 'number' ? pool.remainingPct : 100;
+    if (rem <= 15) return 'var(--ap-danger)';
+    if (rem <= 40) return 'var(--ap-warning)';
+    return 'var(--ap-success)';
   }
 
   function renderLegend() {
@@ -152,29 +153,38 @@
     const isWeeklyMode = quotaMode === 'weekly' && quota.weekly;
     const pools = isWeeklyMode ? quota.weekly.pools : quota.pools;
     const planLabel = quota.planName || '';
+    const hasNativeWeekly = isWeeklyMode && (pools || []).some((p) => p.source === 'native');
     $('plan-badge').textContent = isWeeklyMode
-      ? `${planLabel} · 7d (${quota.weekly.trackedDays}d tracked)`
+      ? hasNativeWeekly
+        ? `${planLabel} · Weekly`
+        : `${planLabel} · 7d (${quota.weekly.trackedDays}d tracked)`
       : planLabel;
 
     grid.innerHTML = (pools || [])
       .map((p) => {
-        const vc = verdictClass(p.verdict);
-        const col = barColor(p.verdict);
+        const badge = quotaStatus(p);
+        const col = barColor(p);
+        const timeLeftPct = Math.max(1, Math.min(99, 100 - (p.elapsedPct || 0)));
+        const metaLeft = `${p.remainingPct}% left (${p.usedPct}% used)`;
         const metaRight = isWeeklyMode
-          ? (p.tokens7d ? `${fmtTokens(p.tokens7d)} tok · ${p.note || ''}` : p.note || `${fmtLeft(p.leftMs)}`)
-          : `${p.remainingPct}% left · ${fmtLeft(p.leftMs)}`;
+          ? p.source === 'native'
+            ? `resets ${fmtLeft(p.leftMs)}${p.tokens7d ? ` · ${fmtTokens(p.tokens7d)} tok` : ''}`
+            : p.tokens7d
+              ? `${fmtTokens(p.tokens7d)} tok · ${p.note || ''}`
+              : p.note || `${fmtLeft(p.leftMs)}`
+          : `resets ${fmtLeft(p.leftMs)}${p.weekly ? ` · 7d ${Math.round(p.weekly.remainingPct)}% left` : ''}`;
         return `
         <div class="quota-card">
           <div class="quota-top">
             <span class="quota-name">${esc(p.name)} <span class="muted mono" style="font-weight:400">(${esc(p.windowLabel)})</span></span>
-            <span class="verdict ${vc}">${esc(p.verdict)}</span>
+            <span class="verdict ${badge.cls}">${esc(badge.text)}</span>
           </div>
-          <div class="meter-track" title="${p.usedPct}% used vs ${p.elapsedPct}% window elapsed">
-            <div class="meter-fill" style="width:${Math.min(100, p.usedPct)}%;background:${col}"></div>
-            <div class="meter-marker" style="left:${Math.min(99, p.elapsedPct)}%"></div>
+          <div class="meter-track" title="${p.remainingPct}% quota left vs ${timeLeftPct}% window time left">
+            <div class="meter-fill" style="width:${Math.max(0, Math.min(100, p.remainingPct))}%;background:${col}"></div>
+            <div class="meter-marker" style="left:${timeLeftPct}%"></div>
           </div>
           <div class="quota-meta mono">
-            <span>${p.usedPct}% / ${p.elapsedPct}%</span>
+            <span>${esc(metaLeft)}</span>
             <span>${esc(metaRight)}</span>
           </div>
         </div>`;

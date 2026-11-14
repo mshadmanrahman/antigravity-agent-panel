@@ -25,10 +25,14 @@
 
   const fmtLeft = (ms) => {
     const m = Math.max(0, Math.round((ms || 0) / 60000));
-    if (m >= 1440) return `${Math.floor(m / 1440)}d`;
+    if (m >= 1440) {
+      const d = Math.floor(m / 1440);
+      const h = Math.floor((m % 1440) / 60);
+      return h ? `${d}d ${h}h` : `${d}d`;
+    }
     const h = Math.floor(m / 60);
     const rem = m % 60;
-    return h ? `${h}h ${rem}m` : `${rem}m`;
+    return h ? (rem ? `${h}h ${rem}m` : `${h}h`) : `${rem}m`;
   };
 
   let expanded = false;
@@ -79,11 +83,11 @@
     window.webkit?.messageHandlers?.hud?.postMessage({ type: 'startDrag' });
   });
 
-  function barColor(verdict) {
-    if (verdict === 'over pace') return 'var(--hud-danger)';
-    if (verdict === 'ahead of pace') return 'var(--hud-warning)';
-    if (verdict === 'under pace') return 'var(--hud-success)';
-    return 'var(--hud-primary)';
+  function barColor(pool) {
+    const rem = typeof pool?.remainingPct === 'number' ? pool.remainingPct : 100;
+    if (rem <= 15) return 'var(--hud-danger)';
+    if (rem <= 40) return 'var(--hud-warning)';
+    return 'var(--hud-success)';
   }
 
   function findFocusPool(pools, mainModel) {
@@ -142,20 +146,31 @@
       return;
     }
 
-    const focusUsed = Math.round(focus.usedPct);
-    const focusRight = `${focusUsed}% used · ${fmtLeft(focus.leftMs)}`;
+    const focusLeft = Math.round(focus.remainingPct);
+    const focusRight = `${focusLeft}% left · ${fmtLeft(focus.leftMs)}`;
+    const timeLeftPct = Math.max(1, Math.min(99, 100 - (focus.elapsedPct || 0)));
+    const weekly = focus.weekly;
+    const weeklyTip = weekly ? ` · Weekly: ${weekly.remainingPct}% left (${fmtLeft(weekly.leftMs)})` : '';
 
     el.innerHTML = `
-      <div class="q-focus" title="${esc(focus.name)} (${esc(focus.windowLabel)}): ${focus.usedPct}% used vs ${focus.elapsedPct}% elapsed (${esc(focus.verdict)})">
+      <div class="q-focus" title="${esc(focus.name)} (${esc(focus.windowLabel)}): ${focus.remainingPct}% quota left vs ${timeLeftPct}% window time left${esc(weeklyTip)}">
         <div class="q-focus-top">
           <span class="q-title">${esc(focus.name.split(' / ')[0])} · ${esc(focus.windowLabel)}</span>
           <span class="q-meta mono">${esc(focusRight)}</span>
         </div>
         <div class="meter-track">
-          <div class="meter-fill" style="width:${Math.min(100, focus.usedPct)}%;background:${barColor(focus.verdict)}"></div>
-          <div class="meter-marker" style="left:${Math.min(99, focus.elapsedPct)}%"></div>
+          <div class="meter-fill" style="width:${Math.max(0, Math.min(100, focus.remainingPct))}%;background:${barColor(focus)}"></div>
+          <div class="meter-marker" style="left:${timeLeftPct}%"></div>
         </div>
-      </div>`;
+      </div>
+      ${
+        weekly
+          ? `<div class="q-chip" title="Weekly limit for ${esc(focus.name)}: ${weekly.remainingPct}% left, resets in ${fmtLeft(weekly.leftMs)}">
+               <div class="q-chip-top">7d · <span class="mono">${Math.round(weekly.remainingPct)}% left</span></div>
+               <div class="q-chip-sub mono">resets ${esc(fmtLeft(weekly.leftMs))}</div>
+             </div>`
+          : ''
+      }`;
   }
 
   function renderDrawer(snap) {
@@ -169,20 +184,25 @@
 
     const pools = q?.pools || [];
     $('drawer-quotas').innerHTML = pools
-      .map(
-        (p) => `
-        <div class="dq-card">
+      .map((p) => {
+        const timeLeftPct = Math.max(1, Math.min(99, 100 - (p.elapsedPct || 0)));
+        return `
+        <div class="dq-card" title="${esc(p.name)}: ${p.remainingPct}% quota left vs ${timeLeftPct}% window time left">
           <div class="dq-top">
             <span>${esc(p.name)} (${esc(p.windowLabel)})</span>
-            <span class="mono">${Math.round(p.usedPct)}%</span>
+            <span class="mono">${Math.round(p.remainingPct)}% left</span>
           </div>
           <div class="meter-track">
-            <div class="meter-fill" style="width:${Math.min(100, p.usedPct)}%;background:${barColor(p.verdict)}"></div>
-            <div class="meter-marker" style="left:${Math.min(99, p.elapsedPct)}%"></div>
+            <div class="meter-fill" style="width:${Math.max(0, Math.min(100, p.remainingPct))}%;background:${barColor(p)}"></div>
+            <div class="meter-marker" style="left:${timeLeftPct}%"></div>
           </div>
-          <div class="muted mono">${p.remainingPct}% left · ${fmtLeft(p.leftMs)}</div>
-        </div>`,
-      )
+          <div class="muted mono">${
+            p.weekly
+              ? `resets ${fmtLeft(p.leftMs)} · 7d ${Math.round(p.weekly.remainingPct)}% left`
+              : `resets ${fmtLeft(p.leftMs)} · ${p.usedPct}% used`
+          }</div>
+        </div>`;
+      })
       .join('');
 
     const list = $('drawer-agents');
@@ -218,7 +238,7 @@
     const colorVar = `var(--el-${elem.id}-body)`;
     const pools = snap.quota?.pools || [];
     const focus = findFocusPool(pools, mainModel);
-    const pct = focus ? Math.max(0, Math.min(100, focus.usedPct)) : 0;
+    const pct = focus ? Math.max(0, Math.min(100, focus.remainingPct)) : 0;
     const rounded = Math.round(pct);
 
     spriteEl.innerHTML = renderCharacterSvg(
@@ -231,8 +251,9 @@
     arc.style.strokeDashoffset = String(DIAL_CIRC * (1 - pct / 100));
     pctEl.textContent = focus ? `${rounded}%` : '--';
 
+    const wkInfo = focus?.weekly ? ` · 7d: ${Math.round(focus.weekly.remainingPct)}% left` : '';
     mini.title = focus
-      ? `${elem.name} (${focus.windowLabel}): ${rounded}% used · ${fmtLeft(focus.leftMs)} left (click to expand)`
+      ? `${elem.name} (${focus.windowLabel}): ${rounded}% left · ${fmtLeft(focus.leftMs)}${wkInfo} (click to expand)`
       : `${elem.name} (click to expand)`;
   }
 
