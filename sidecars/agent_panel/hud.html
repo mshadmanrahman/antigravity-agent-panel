@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Elemental HUD</title>
+  <link rel="stylesheet" href="/hud.css">
+</head>
+<body>
+  <div id="hud-shell" class="hud-shell">
+    <div id="hud-drawer" class="hud-drawer hidden" aria-label="Expanded crew and quota overview">
+      <div class="drawer-head">
+        <span id="drawer-title" class="drawer-title">Active Crew</span>
+        <span id="drawer-meta" class="mono muted"></span>
+      </div>
+      <div id="drawer-quotas" class="drawer-quotas"></div>
+      <div id="drawer-agents" class="drawer-agents"></div>
+    </div>
+
+    <button id="hud-mini" type="button" class="hud-mini hidden" title="Click to expand Elemental HUD" aria-label="Resume Elemental HUD">
+      <span id="hud-mini-sprite" class="mini-sprite" aria-hidden="true"></span>
+      <span class="mini-dial-wrap">
+        <svg class="dial-svg" viewBox="0 0 46 46" aria-hidden="true">
+          <circle class="dial-track" cx="23" cy="23" r="19" fill="none" stroke-width="3.2"/>
+          <circle id="dial-arc" class="dial-arc" cx="23" cy="23" r="19" fill="none" stroke-width="3.2" stroke-linecap="round" transform="rotate(-90 23 23)"/>
+        </svg>
+        <span id="hud-mini-pct" class="dial-pct mono">0%</span>
+      </span>
+    </button>
+
+    <div id="hud-bar" class="hud-bar">
+      <div id="drag-grip" class="drag-grip" title="Drag to reposition">
+        <svg width="8" height="14" viewBox="0 0 8 14" aria-hidden="true">
+          <circle cx="2" cy="3" r="1" fill="currentColor"/>
+          <circle cx="6" cy="3" r="1" fill="currentColor"/>
+          <circle cx="2" cy="7" r="1" fill="currentColor"/>
+          <circle cx="6" cy="7" r="1" fill="currentColor"/>
+          <circle cx="2" cy="11" r="1" fill="currentColor"/>
+          <circle cx="6" cy="11" r="1" fill="currentColor"/>
+        </svg>
+      </div>
+
+      <div id="hud-crew" class="hud-crew" aria-label="Active element">
+        <div class="hud-empty muted">Waiting for Antigravity chat...</div>
+      </div>
+
+      <div class="hud-divider"></div>
+
+      <div id="hud-quotas" class="hud-quotas" aria-label="Quota overview"></div>
+
+      <div class="hud-controls">
+        <button id="hud-expand" type="button" class="icon-btn" title="Show all agents &amp; quotas" aria-label="Expand details" aria-expanded="false">
+          <svg class="chev-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 10L8 6L12 10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button id="hud-hide" type="button" class="icon-btn" title="Minimize HUD to quota dial" aria-label="Minimize HUD">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3.5 8H12.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  <script src="/characters.js"></script>
+  <script src="/hud.js"></script>
+</body>
+</html>

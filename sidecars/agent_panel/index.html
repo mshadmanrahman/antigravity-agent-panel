@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Elemental Agent Panel</title>
+  <script src="/preload.js"></script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="panel">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="title">Elemental Crew</h1>
+        <span id="live-pill" class="live-pill">
+          <span id="live-dot" class="live-dot"></span>
+          <span id="summary-line" class="mono">Connecting...</span>
+        </span>
+      </div>
+      <div class="topbar-actions">
+        <div class="seg" role="group" aria-label="Quota window toggle">
+          <button id="mode-reset" type="button" class="seg-btn active" data-mode="reset" title="Current 5-hour &amp; 7-day reset timers">5h</button>
+          <button id="mode-weekly" type="button" class="seg-btn" data-mode="weekly" title="7-day rolling view">7d</button>
+        </div>
+        <button id="toggle-legend" type="button" class="ghost-btn">Elements</button>
+      </div>
+    </header>
+
+    <section id="legend-box" class="legend-box hidden" aria-label="Elemental roster"></section>
+
+    <section aria-label="Quota and pace">
+      <div class="section-head">
+        <span>Usage &amp; Pace</span>
+        <span id="plan-badge" class="mono"></span>
+      </div>
+      <div id="quota-grid" class="quota-grid" style="margin-top:6px"></div>
+      <div id="credits-bar" class="credits-bar hidden" style="margin-top:6px"></div>
+    </section>
+
+    <section aria-label="Active agents">
+      <div class="section-head">
+        <span>Agents</span>
+        <span id="crew-totals" class="mono"></span>
+      </div>
+      <div id="crew-list" class="crew-list" style="margin-top:6px"></div>
+    </section>
+
+    <section id="other-section" class="hidden" aria-label="Other running chats">
+      <div class="section-head">
+        <span>Other Running Chats</span>
+        <span id="other-count" class="mono"></span>
+      </div>
+      <div id="other-list" class="crew-list" style="margin-top:6px"></div>
+    </section>
+  </main>
+  <script src="/characters.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

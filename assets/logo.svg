@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 28 24" shape-rendering="crispEdges">
+  <title>Elemental Agent Panel</title>
+  <rect x="13" y="5" width="2" height="1" fill="#C2E7FF"/>
+  <rect x="11" y="6" width="6" height="1" fill="#C2E7FF"/>
+  <rect x="9" y="7" width="10" height="2" fill="#078EFA"/>
+  <rect x="7" y="9" width="14" height="6" fill="#078EFA"/>
+  <rect x="8" y="15" width="12" height="2" fill="#078EFA"/>
+  <rect x="10" y="17" width="8" height="1" fill="#0B57D0"/>
+  <rect x="9" y="9" width="3" height="2" fill="#C2E7FF"/>
+  <rect x="17" y="10" width="3" height="4" fill="#47A9FF"/>
+  <rect x="18" y="14" width="2" height="2" fill="#0B57D0"/>
+  <rect x="10" y="11" width="1.5" height="2.2" fill="#081B33"/>
+  <rect x="16.5" y="11" width="1.5" height="2.2" fill="#081B33"/>
+  <rect x="4.5" y="12" width="2" height="2" fill="#078EFA"/>
+  <rect x="21.5" y="12" width="2" height="2" fill="#078EFA"/>
+  <rect x="9.5" y="18.5" width="2" height="1.5" fill="#0B57D0"/>
+  <rect x="16.5" y="18.5" width="2" height="1.5" fill="#0B57D0"/>
+  <rect x="23" y="4" width="1" height="4" fill="#A8C7FA"/>
+  <rect x="21.5" y="5.5" width="4" height="1" fill="#A8C7FA"/>
+  <rect x="23" y="5.5" width="1" height="1" fill="#FFFFFF"/>
+</svg>

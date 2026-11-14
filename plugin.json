@@ -1,0 +1,15 @@
+{
+  "name": "antigravity-agent-panel",
+  "displayName": "Elemental Agent Panel",
+  "description": "Live elemental agent crew, token & context meters, and quota pace bars in the Auxiliary Pane.",
+  "logo": "assets/logo.svg",
+  "author": {
+    "name": "Shadman Rahman",
+    "url": "https://github.com/mshadmanrahman"
+  },
+  "suggestedPrompts": [
+    "Open the Elemental Agent Panel",
+    "Run three subagents in parallel to plan, search, and review this repo",
+    "Check my Hydrogen and Argon quota pace"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "agent_panel",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Elemental Agent Panel sidecar for Google Antigravity"
+}
