@@ -125,16 +125,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
     // MARK: - Status bar menu
 
+    private lazy var statusIcon: NSImage = makeStatusIcon()
+
+    private func makeStatusIcon() -> NSImage {
+        let size = NSSize(width: 18, height: 18)
+        let img = NSImage(size: size, flipped: true) { _ in
+            NSColor.labelColor.setFill()
+            let rects: [(CGFloat, CGFloat, CGFloat, CGFloat)] = [
+                (14, 2, 1, 3),   // sparkle vertical
+                (13, 3, 3, 1),   // sparkle horizontal
+                (7, 3, 2, 1),    // sprite tip
+                (5, 4, 6, 1),    // crown
+                (4, 5, 8, 2),    // upper head
+                (3, 7, 10, 5),   // torso
+                (1, 9, 2, 2),    // left arm
+                (13, 9, 2, 2),   // right arm
+                (4, 12, 8, 1),   // lower body
+                (5, 13, 2, 2),   // left foot
+                (9, 13, 2, 2)    // right foot
+            ]
+            for (x, y, w, h) in rects {
+                NSRect(x: x, y: y, width: w, height: h).fill()
+            }
+            if let ctx = NSGraphicsContext.current?.cgContext {
+                ctx.clear(CGRect(x: 5, y: 8, width: 1.5, height: 2.5))
+                ctx.clear(CGRect(x: 9.5, y: 8, width: 1.5, height: 2.5))
+            }
+            return true
+        }
+        img.isTemplate = true
+        return img
+    }
+
     private func setupStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         updateStatusButton()
         rebuildMenu()
     }
 
     private func updateStatusButton() {
         if let btn = statusItem?.button {
-            btn.title = (manuallyHidden || isMinimized) ? "✦ HUD · off" : "✦ HUD"
-            btn.toolTip = (manuallyHidden || isMinimized) ? "Elemental HUD minimized/hidden (click to resume)" : "Elemental Agent HUD"
+            let isHiddenOrMini = manuallyHidden || isMinimized
+            btn.title = ""
+            btn.image = statusIcon
+            btn.imagePosition = .imageOnly
+            btn.appearsDisabled = isHiddenOrMini
+            btn.toolTip = isHiddenOrMini ? "Elemental Agent minimized/hidden (click to resume)" : "Elemental Agent"
         }
     }
 
@@ -142,7 +178,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         let menu = NSMenu()
         let isHiddenOrMini = manuallyHidden || isMinimized
         let toggleItem = NSMenuItem(
-            title: isHiddenOrMini ? "Resume Elemental HUD" : "Hide Floating HUD",
+            title: isHiddenOrMini ? "Resume Agent Bar" : "Hide Agent Bar",
             action: #selector(toggleVisible),
             keyEquivalent: ""
         )
@@ -176,7 +212,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
         menu.addItem(.separator())
 
-        let quitItem = NSMenuItem(title: "Quit Elemental HUD", action: #selector(quitApp), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "Quit Elemental Agent", action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
 
