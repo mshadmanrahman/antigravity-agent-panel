@@ -1,57 +1,144 @@
+<p align="center">
+  <img src="assets/hero.png" alt="Elemental Agent Panel: pixel elements for each Antigravity agent and a quota bar, floating above the prompt box" width="100%">
+</p>
+
 # Elemental Agent Panel for Google Antigravity
 
-A live Auxiliary Pane plugin and floating macOS HUD bar for **Google Antigravity**. Watch your active agents work as animated periodic-table elements right above your prompt input bar or in the side pane, track token and context usage per conversation and subagent, and toggle between native reset windows (`5h`/`7d`) and a 7-day rolling view.
+![Works with Google Antigravity](https://img.shields.io/badge/works%20with-Google%20Antigravity-3B9EFF)
+![Free](https://img.shields.io/badge/price-free-8E8E93)
+![macOS](https://img.shields.io/badge/HUD-macOS-ECEBE8)
+![License MIT](https://img.shields.io/badge/license-MIT-4CC38A)
+![Install time](https://img.shields.io/badge/install-3%20minutes-E0A44A)
 
-Sister project to [claude-agent-panel](https://github.com/mshadmanrahman/claude-agent-panel).
+See what your Antigravity agents are doing and whether your quota will last, without leaving the chat. Every agent shows up as a small pixel element above your prompt box, and a bar tells you how much of your Gemini quota is left against how much time is left before it resets.
 
-![Elemental HUD with the drawer expanded above the Antigravity chatbox](assets/hud.jpg)
+[Watch it work](#watch-it-work) · [What you get](#what-you-get) · [Meet the elements](#meet-the-elements) · [How to read it](#how-to-read-the-hud) · [Install](#install-it) · [How quota sync works](#how-quota-sync-works)
 
-<img src="assets/panel.jpg" alt="Agent Panel in the Antigravity side pane, showing usage and pace per model pool" width="420">
+Sister project to [claude-agent-panel](https://github.com/mshadmanrahman/claude-agent-panel), which does the same for Claude Code.
 
-## Two ways to view it
+## Watch it work
 
-1. **Floating Above-Chat HUD (`Elemental HUD.app` on macOS):**
-   Antigravity has no plugin hook inside the prompt box, and closing the right-hand Auxiliary Pane hides sidecar tabs. `Elemental HUD.app` snaps to your active chatbox width and anchors right above it (gliding upward automatically as multiline prompts grow), tracks Antigravity's model dropdown live across `antigravity`, `antigravity-ide`, and `antigravity-cli`, auto-hides when Antigravity loses focus, and minimizes into a circular quota dial beside the chatbox.
-2. **Auxiliary Pane Sidecar (`Agent Panel`):**
-   Opens natively inside Antigravity's right-hand pane from the `+` menu (or a `sidecar://antigravity-agent-panel/agent_panel/` link).
+<p align="center">
+  <img src="assets/demo.gif" alt="Demo: a task goes from planning to building to review to done while the HUD shows each agent and the quota bar" width="100%">
+</p>
 
-## What it shows
+Eight steps, 25 seconds: a task goes from planning to shipped while the HUD tracks each agent. [Download the MP4](assets/demo.mp4) for the sharp version.
 
-- **Elemental characters (Model x Persona x State):**
-  - **1 H (Hydrogen):** Airy Gemini Blue (`#078EFA` light / `#3B9EFF` dark) with an orbiting four-point spark.
-  - **18 Ar (Argon):** Noble-gas containment shell for `Gemini 4 Argon` and `Orchestrator (Argon)`.
-  - **6 C (Carbon):** Faceted crystalline core for `Gemini 4 Carbon`.
-  - **3.8 Flash:** Electric spark sprite for `Gemini 3.8 Flash`.
-  - **Claude / OSS:** Terracotta guest atom when switching to non-Gemini models.
-- **Role personas:** Coordinator, Architect, Builder, Reviewer, Scout, Browser, and Shipper animations driven by subagent roles and live tool calls.
-- **Usage & Pace:** Each model displays its native reset window automatically (`5h` rolling for Hydrogen/Flash and Claude/OSS, `7d` weekly for Argon) with `% used` vs. `% elapsed` pace verdicts, while the expanded drawer shows all model pools and passive 7-day token totals.
-- **Context & Tokens:** Real-time context fill percentage, total tokens, cache hit rate, and elapsed active time read from each conversation's `transcript.jsonl`.
+## What you get
 
-## Install locally
+| Piece | What it shows | Where you see it |
+|---|---|---|
+| **Elemental HUD** | Your main agent, how many helpers are working, and the quota bar for the model you picked | A small macOS window that sits right above the Antigravity prompt box |
+| **Expanded HUD** | Every agent in the chat and every model's quota | Click the arrow on the HUD |
+| **Quota dial** | Quota left, as a ring | Click the minus on the HUD |
+| **Side panel** | All of the above plus tokens, context and cache per agent, and a 7-day view | Antigravity's right-hand pane, from the `+` menu |
+
+<p align="center">
+  <img src="assets/hud-expanded.png" alt="The HUD expanded above the prompt box, listing every agent and three model quotas" width="49%">
+  <img src="assets/panel.png" alt="The side panel open next to the chat, with usage and pace cards and the agent list" width="49%">
+</p>
+
+## Meet the elements
+
+The element is picked by the model the agent runs on.
+
+| | Element | Model |
+|:---:|---|---|
+| <img src="assets/crew/hydrogen-main-working.svg" width="56" alt="Hydrogen"> | **1 H, Hydrogen** | Gemini 4 Hydrogen (the default) |
+| <img src="assets/crew/argon-main-working.svg" width="56" alt="Argon"> | **18 Ar, Argon** | Gemini 4 Argon and Orchestrator |
+| <img src="assets/crew/carbon-main-working.svg" width="56" alt="Carbon"> | **6 C, Carbon** | Gemini 4 Carbon |
+| <img src="assets/crew/flash-main-working.svg" width="56" alt="Flash"> | **3.8 Flash** | Gemini 3.8 Flash |
+| <img src="assets/crew/guest-main-working.svg" width="56" alt="Guest"> | **Guest** | Claude, GPT and open models |
+
+The outfit is picked by the job the agent was given.
+
+| <img src="assets/crew/hydrogen-main-working.svg" width="56" alt="Coordinator"> | <img src="assets/crew/hydrogen-architect-working.svg" width="56" alt="Architect"> | <img src="assets/crew/hydrogen-developer-working.svg" width="56" alt="Builder"> | <img src="assets/crew/hydrogen-reviewer-working.svg" width="56" alt="Reviewer"> | <img src="assets/crew/hydrogen-scout-working.svg" width="56" alt="Scout"> | <img src="assets/crew/hydrogen-browser-working.svg" width="56" alt="Browser"> | <img src="assets/crew/hydrogen-shipper-working.svg" width="56" alt="Shipper"> |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Coordinator | Architect | Builder | Reviewer | Scout | Browser | Shipper |
+
+And the face tells you the state.
+
+| <img src="assets/crew/hydrogen-developer-working.svg" width="56" alt="Working"> | <img src="assets/crew/hydrogen-developer-waiting.svg" width="56" alt="Waiting"> | <img src="assets/crew/hydrogen-developer-done.svg" width="56" alt="Done"> | <img src="assets/crew/hydrogen-developer-failed.svg" width="56" alt="Failed"> |
+|:---:|:---:|:---:|:---:|
+| Working | Waiting for you | Done | Failed |
+
+## How to read the HUD
+
+<img src="assets/anatomy.png" alt="The HUD bar with nine numbered parts: element, task, context, helpers, quota bar, time tick, weekly chip, expand and minimize" width="100%">
+
+<img src="assets/pace.png" alt="Four quota cards: fresh, healthy, low and critical" width="100%">
+
+The badge on each card goes by quota left: under 40% turns it amber, under 15% turns it red.
+
+## Install it
+
+You need a Mac, Google Antigravity (signed in, with a chat open), Node.js, and Xcode command line tools for the HUD. The side panel alone works anywhere Antigravity runs.
+
+### The lazy way: let Antigravity do it
+
+Open a chat in Antigravity, paste this, and press Enter. Allow the commands when it asks.
+
+```text
+Install the Elemental Agent Panel for me. Clone github.com/mshadmanrahman/antigravity-agent-panel into ~/.gemini/config/plugins/antigravity-agent-panel, then run bash ~/.gemini/config/plugins/antigravity-agent-panel/hud/build-hud.sh and open "$HOME/Applications/Elemental HUD.app". Tell me when it says Built.
+```
+
+### The Terminal way
+
+**Step 1.** Get the plugin.
 
 ```bash
 git clone https://github.com/mshadmanrahman/antigravity-agent-panel ~/.gemini/config/plugins/antigravity-agent-panel
 ```
 
-Or symlink an existing checkout:
+**Step 2.** Build the HUD. It ends with a `Built` line.
+
+```bash
+bash ~/.gemini/config/plugins/antigravity-agent-panel/hud/build-hud.sh
+```
+
+**Step 3.** Open it.
+
+```bash
+open -a "$HOME/Applications/Elemental HUD.app"
+```
+
+Already have a checkout somewhere else? Link it instead of Step 1:
 
 ```bash
 ln -sfn /path/to/antigravity-agent-panel ~/.gemini/config/plugins/antigravity-agent-panel
 ```
 
-### Build and launch the floating macOS HUD
+## Did it work?
+
+1. Restart Antigravity and open a chat.
+2. Look right above the prompt box. You should see your element and a quota bar.
+3. For the side panel, click `+` in the right-hand pane and pick **Elemental Agent Panel**.
+
+## Something went wrong
+
+| What you see | What to do |
+|---|---|
+| `xcrun: error` or `swiftc: command not found` | Run `xcode-select --install`, wait for it to finish, then run Step 2 again. |
+| The HUD says "Waiting for Antigravity chat..." | Open a chat and send any message. The HUD needs a running language server. |
+| The quota bar is missing | The HUD could not reach the language server. Restart Antigravity with a chat open. |
+| The HUD is gone | It hides when Antigravity loses focus. Click back into Antigravity. |
+| No **Elemental Agent Panel** in the `+` menu | Check the folder is at `~/.gemini/config/plugins/antigravity-agent-panel`, then restart Antigravity. |
+
+Still stuck? [Open an issue](https://github.com/mshadmanrahman/antigravity-agent-panel/issues/new) with a screenshot.
+
+## Get the newest version
 
 ```bash
-bash ~/.gemini/config/plugins/antigravity-agent-panel/hud/build-hud.sh
-open -a "$HOME/Applications/Elemental HUD.app"
+git -C ~/.gemini/config/plugins/antigravity-agent-panel pull && bash ~/.gemini/config/plugins/antigravity-agent-panel/hud/build-hud.sh
 ```
 
-## Requirements
+## Remove it
 
-- macOS (the floating HUD is a Swift app; the side-pane plugin runs anywhere Antigravity does)
-- Google Antigravity, signed in, with at least one chat open so a language server is running
-- Node.js installed in `/opt/homebrew/bin`, `/usr/local/bin` or `/usr/bin` (the HUD looks there to start the backend)
-- Xcode command line tools to build the HUD (`xcode-select --install`)
+```bash
+rm -rf ~/.gemini/config/plugins/antigravity-agent-panel "$HOME/Applications/Elemental HUD.app"
+```
+
+---
 
 ## How it works
 
@@ -78,11 +165,15 @@ Antigravity's language server already knows your quota. The panel asks it rather
    | above 1.0 | Ahead of pace |
    | above 1.15 | Over pace |
 
-   The tick on each bar marks where usage would sit if you spent evenly across the window.
+   The verdict ships in `/api/panel` for scripts. The cards and the HUD show a simpler badge by quota left (fresh, healthy, low, critical), and the tick on each bar marks where usage would sit if you spent evenly across the window.
 5. **Fall back when needed.** If the summary call fails, the panel reads `GetUserStatus` instead and groups each model's `quotaInfo` by reset time. You lose the weekly split but keep the 5-hour numbers.
 6. **Keep a ledger.** Every 5-hour snapshot is written to `weekly-ledger.json` in the sidecar data folder, so the `7d` view survives resets and app restarts. Token totals for the same 7 days come from each conversation's `transcript.jsonl`.
 
 The standalone server listens on `127.0.0.1` only, sends no CORS headers, and rejects any request whose `Host` is not `127.0.0.1` or `localhost`, so a web page can't read your chat titles through DNS rebinding.
+
+## Rebuild the images and video
+
+Everything in `assets/` is rendered from the real HUD and panel code against a fixture, so no private chat shows up. Run `python3 assets/src/build.py` (needs Chrome and ffmpeg).
 
 ## License
 

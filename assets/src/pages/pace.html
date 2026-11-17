@@ -1,0 +1,35 @@
+<!doctype html><html data-theme="dark"><head><meta charset="utf-8"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="base.css"><style>
+/* The four quota states, drawn with the panel's own card markup and styles. 1280x360 */
+body{width:1280px;height:360px;overflow:hidden;font-size:13px}
+h2{position:absolute;left:64px;top:44px;font:900 44px Archivo;font-stretch:80%}
+.sub{position:absolute;left:64px;top:104px;font:400 18px Inter;color:var(--body)}
+.sub i{display:inline-block;width:2px;height:16px;background:var(--ink);opacity:.6;vertical-align:-2px;margin:0 4px}
+.grid{position:absolute;left:64px;right:64px;top:170px;display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.quota-card{padding:14px 16px;gap:8px}
+.quota-top{font-size:14px}
+.quota-meta{font-size:12px}
+.meter-track{height:8px}
+.say{margin-top:14px;font:400 16px/1.45 Inter;color:var(--body)}
+.say b{color:var(--ink);font-weight:600}
+</style></head><body>
+<h2>How to read a quota bar</h2>
+<p class="sub">The bar is quota left. The tick <i></i> is time left in the window. You want the bar past the tick.</p>
+<div class="grid" id="g"></div>
+<script>
+const cards = [
+  ['fresh', 'fresh', 100, 92, 'var(--ap-success)', 'New window', 'Nothing used yet.'],
+  ['healthy', 'under', 74, 48, 'var(--ap-success)', 'Healthy', 'More quota left than time. Keep going.'],
+  ['low', 'ahead', 33, 61, 'var(--ap-warning)', 'Low', 'Under 40% left. Slow down or switch model.'],
+  ['critical', 'over', 9, 70, 'var(--ap-danger)', 'Critical', 'Under 15% left. It runs out before the reset.'],
+];
+document.getElementById('g').innerHTML = cards.map(([t, cls, left, timeLeft, col, head, text]) => `
+  <div>
+    <div class="quota-card">
+      <div class="quota-top"><span class="quota-name">Hydrogen / Flash <span class="muted mono" style="font-weight:400">(5h)</span></span><span class="verdict ${cls}">${t}</span></div>
+      <div class="meter-track"><div class="meter-fill" style="width:${left}%;background:${col}"></div><div class="meter-marker" style="left:${timeLeft}%"></div></div>
+      <div class="quota-meta mono"><span>${left}% left</span><span>${timeLeft}% time left</span></div>
+    </div>
+    <p class="say"><b>${head}.</b> ${text}</p>
+  </div>`).join('');
+document.body.dataset.ready = '1';
+</script></body></html>

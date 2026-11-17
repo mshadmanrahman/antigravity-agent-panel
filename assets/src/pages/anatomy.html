@@ -1,0 +1,48 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+/* HUD bar with numbered pins placed from the live element positions. 1280x560 */
+body{width:1280px;height:560px;overflow:hidden;position:relative}
+h2{position:absolute;left:64px;top:44px;font:900 44px Archivo;font-stretch:80%}
+#f{position:absolute;left:64px;top:150px;width:1152px;height:70px}
+.pin{position:absolute;transform:translate(-50%,-100%)}
+.pin::after{content:'';position:absolute;left:13px;top:28px;width:2px;height:14px;background:var(--blue)}
+ol{position:absolute;left:64px;right:64px;top:270px;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:16px 56px}
+li{display:flex;gap:14px;align-items:flex-start;font:400 17px/1.4 Inter;color:var(--body)}
+li .pin{position:static;transform:none;flex:none}
+li .pin::after{display:none}
+li b{color:var(--ink);font-weight:600}
+</style></head><body>
+<h2>How to read the HUD</h2>
+<iframe id="f" src="about:blank"></iframe>
+<ol id="legend"></ol>
+<script src="embed.js"></script><script>
+const parts = [
+  ['.hero-sprite', 'The element', 'Your main agent, drawn by model. It moves while it works.'],
+  ['.hero-name', 'Element and task', 'Which model is driving, and what it is doing right now.'],
+  ['.pill', 'Context used', 'How full the main agent\'s context window is.'],
+  ['.pill.active', 'Helpers', 'How many subagents are working at the same time.'],
+  ['.meter-track', 'Quota bar', 'Quota left in the current window for the model you are using.'],
+  ['.meter-marker', 'Time tick', 'Time left in that window. Bar ahead of the tick means you are fine.'],
+  ['.q-chip', 'Weekly chip', 'What is left of the 7-day limit, and when it resets.'],
+  ['#hud-expand', 'Expand', 'Opens every agent and every model quota above the bar.'],
+  ['#hud-hide', 'Minimize', 'Shrinks the HUD to a small quota dial.'],
+];
+fetch('/__stage?name=build').then(() => {
+  const f = document.getElementById('f');
+  f.src = '/hud';
+  embed(f, { ready(doc) {
+    const box = f.getBoundingClientRect();
+    parts.forEach(([sel, name, text], i) => {
+      const el = doc.querySelector(sel); if (!el) return;
+      const r = el.getBoundingClientRect();
+      const x = sel === '.meter-marker' ? r.left + 1 : sel === '.meter-track' ? r.left + r.width * 0.18 : r.left + r.width / 2;
+      const pin = document.createElement('div');
+      pin.className = 'pin'; pin.textContent = i + 1;
+      pin.style.left = box.left + x + 'px';
+      pin.style.top = box.top + r.top - 14 + 'px';
+      document.body.appendChild(pin);
+      document.getElementById('legend').insertAdjacentHTML('beforeend',
+        `<li><span class="pin">${i + 1}</span><span><b>${name}.</b> ${text}</span></li>`);
+    });
+  }});
+});
+</script></body></html>

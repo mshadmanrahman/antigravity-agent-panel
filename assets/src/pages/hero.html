@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+body{width:1280px;height:720px;overflow:hidden}
+.hero{padding:52px 64px 0}
+h1{font-size:84px;font-weight:900;font-stretch:75%;line-height:.95;margin:18px 0 12px;letter-spacing:-.01em}
+h1 em{font-style:normal;color:var(--blue)}
+.hero>p{font-size:22px;max-width:640px;color:var(--body);line-height:1.35}
+.crew{position:absolute;right:64px;top:56px;display:grid;grid-template-columns:repeat(3,auto);gap:12px 22px;background:var(--card);border:1px solid var(--line);padding:18px 22px;border-radius:16px}
+.crew figure{display:flex;flex-direction:column;align-items:center;gap:2px}
+.crew img{width:78px;height:62px}
+.crew figcaption{font:600 12px 'JetBrains Mono',monospace;color:var(--mute)}
+iframe{position:absolute;left:64px;right:64px;bottom:28px;width:1152px;height:350px;border-radius:14px}
+</style></head><body>
+<div class="hero">
+  <div class="tag">a plugin for Google Antigravity</div>
+  <h1>Watch your agents <em>work.</em></h1>
+  <p>Every agent becomes a pixel element above your prompt box, and a pace bar tells you if your quota will last.</p>
+</div>
+<div class="crew">
+  <figure><img src="/crew/argon-main-working.svg"><figcaption>18 Ar</figcaption></figure>
+  <figure><img src="/crew/hydrogen-developer-working.svg"><figcaption>1 H</figcaption></figure>
+  <figure><img src="/crew/carbon-architect-working.svg"><figcaption>6 C</figcaption></figure>
+  <figure><img src="/crew/flash-browser-working.svg"><figcaption>3.8 Flash</figcaption></figure>
+  <figure><img src="/crew/guest-reviewer-working.svg"><figcaption>Claude</figcaption></figure>
+  <figure><img src="/crew/flash-shipper-working.svg"><figcaption>Shipper</figcaption></figure>
+</div>
+<iframe id="f" src="/hud"></iframe>
+<script src="embed.js"></script><script>embed(document.getElementById('f'), {click:['hud-expand']})</script>
+</body></html>

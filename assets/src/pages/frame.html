@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+/* One 1280x720 video frame: a plain Antigravity-style window with the real HUD
+   floating above the prompt box. Query: stage, step, cap, expand=1, mini=1, panel=1 */
+body{width:1280px;height:720px;overflow:hidden;background:#0d0d0d}
+.win{position:absolute;inset:24px 24px 96px;background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.bar{height:38px;flex:none;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--line);font:600 12px Inter;color:var(--mute)}
+.bar i{width:11px;height:11px;border-radius:50%;background:#3a3937}
+.bar span{margin-left:14px}
+.main{flex:1;display:flex;min-height:0}
+.side{width:200px;flex:none;border-right:1px solid var(--line);padding:14px 12px;display:flex;flex-direction:column;gap:6px;font:500 12px Inter;color:var(--mute)}
+.side b{font:700 11px 'JetBrains Mono';text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.side div{padding:6px 8px;border-radius:6px}
+.side .on{background:var(--chip);color:var(--ink)}
+.chat{flex:1;position:relative;min-width:0}
+.msg{margin:22px 28px 0 auto;max-width:430px;background:var(--chip);border-radius:12px;padding:10px 14px;font:500 14px/1.4 Inter;width:fit-content}
+.reply{margin:16px 28px;font:400 14px/1.5 Inter;color:var(--body);max-width:560px}
+.prompt{position:absolute;left:28px;right:28px;bottom:18px;height:62px;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:12px 14px;font:400 14px Inter;color:var(--mute)}
+#hud{position:absolute;left:28px;right:28px;bottom:84px;height:330px;width:calc(100% - 56px)}
+#panel{width:400px;flex:none;border-left:1px solid var(--line);display:none}
+body.panel #panel{display:block}
+body.panel .side{display:none}
+.cap{position:absolute;left:24px;right:24px;bottom:20px;height:56px;display:flex;align-items:center;gap:16px}
+.cap .n{width:40px;height:40px;border-radius:50%;background:var(--blue);color:#06121f;font:900 20px Archivo;display:grid;place-items:center;flex:none}
+.cap p{font:700 26px Archivo;font-stretch:90%;letter-spacing:-.005em}
+.cap p em{font-style:normal;color:var(--blue)}
+</style></head><body>
+<div class="win">
+  <div class="bar"><i></i><i></i><i></i><span>recipe-app · Antigravity</span></div>
+  <div class="main">
+    <div class="side"><b>Chats</b><div class="on">Build a recipe search page</div><div>Fix the login redirect</div><div>Write release notes</div></div>
+    <div class="chat">
+      <div class="msg">Build a recipe search page with filters for diet and cook time. Check it in a browser, then ship it to staging.</div>
+      <div class="reply" id="reply"></div>
+      <iframe id="hud" src="about:blank"></iframe>
+      <div class="prompt">Ask anything, @ to mention, / for workflows</div>
+    </div>
+    <iframe id="panel" src="about:blank"></iframe>
+  </div>
+</div>
+<div class="cap"><div class="n" id="n"></div><p id="cap"></p></div>
+<script src="embed.js"></script><script>
+const q = new URLSearchParams(location.search);
+const replies = {
+  idle: 'Ready when you are.',
+  plan: 'Planning first. Handing the layout to an architect agent.',
+  build: 'Plan approved. Three agents are building and checking the page.',
+  review: 'Build done. A reviewer is reading the diff.',
+  done: 'Shipped to staging. All agents finished.',
+};
+const stage = q.get('stage') || 'build';
+document.getElementById('reply').textContent = replies[stage] || '';
+document.getElementById('n').textContent = q.get('step') || '1';
+document.getElementById('cap').innerHTML = q.get('cap') || '';
+if (q.get('panel')) document.body.classList.add('panel');
+fetch('/__stage?name=' + stage).then(() => {
+  const hud = document.getElementById('hud');
+  const click = [];
+  if (q.get('expand')) click.push('hud-expand');
+  if (q.get('mini')) click.push('hud-hide');
+  hud.src = '/hud';
+  embed(hud, { click });
+  if (q.get('panel')) document.getElementById('panel').src = '/';
+});
+</script>
+</body></html>
