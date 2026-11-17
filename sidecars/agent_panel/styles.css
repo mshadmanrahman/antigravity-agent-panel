@@ -122,6 +122,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+button:focus-visible { outline: 2px solid var(--ap-primary); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--ap-primary) 28%, transparent); }
 .hidden { display: none !important; }
 .mono { font-family: var(--ap-mono); font-variant-numeric: tabular-nums; }
 .muted { color: var(--ap-fg-muted); }
@@ -144,12 +146,14 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
   border-bottom: 1px solid var(--ap-border);
 }
 .topbar-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.title { font-size: 14px; font-weight: 700; margin: 0; }
+.title { font-size: 14px; font-weight: 700; margin: 0; white-space: nowrap; }
 .live-pill {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0;
   font-size: 11px; color: var(--ap-fg-muted);
 }
+#summary-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .live-dot {
+  flex: none;
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--ap-success);
 }
@@ -177,6 +181,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
   border-radius: 6px;
   border: 1px solid var(--ap-border);
 }
+.seg-btn:not(.active):hover { background: var(--ap-hover); color: var(--ap-fg); }
 .seg-btn.active {
   background: var(--ap-card);
   color: var(--ap-fg);

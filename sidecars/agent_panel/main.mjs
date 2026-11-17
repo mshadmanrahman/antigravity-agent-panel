@@ -988,7 +988,14 @@ async function start() {
   }
 
   const port = Number(process.env.PORT || process.env.ANTIGRAVITY_SIDECAR_WEB_PORT || 47812);
+  const allowedHosts = new Set([`127.0.0.1:${port}`, `localhost:${port}`]);
   const server = createServer(async (req, res) => {
+    // Block DNS-rebinding pages from reading local telemetry.
+    if (!allowedHosts.has(String(req.headers.host || '').toLowerCase())) {
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
     const url = new URL(req.url || '/', `http://127.0.0.1:${port}`);
     if (url.pathname === '/' || url.pathname === '/index.html') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -998,6 +1005,12 @@ async function start() {
     if (url.pathname === '/hud' || url.pathname === '/hud.html') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(readFileSync(join(__dirname, 'hud.html'), 'utf-8'));
+      return;
+    }
+    if (url.pathname === '/preload.js') {
+      // Antigravity injects host theme tokens here; standalone falls back to CSS defaults.
+      res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+      res.end('');
       return;
     }
     if (STATIC[url.pathname]) {
@@ -1010,10 +1023,7 @@ async function start() {
       const payload = await handlePanel({
         conversationId: url.searchParams.get('conversationId') || '',
       });
-      res.writeHead(200, {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Access-Control-Allow-Origin': '*',
-      });
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(payload));
       return;
     }

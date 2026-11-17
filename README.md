@@ -4,6 +4,10 @@ A live Auxiliary Pane plugin and floating macOS HUD bar for **Google Antigravity
 
 Sister project to [claude-agent-panel](https://github.com/mshadmanrahman/claude-agent-panel).
 
+![Elemental HUD with the drawer expanded above the Antigravity chatbox](assets/hud.jpg)
+
+<img src="assets/panel.jpg" alt="Agent Panel in the Antigravity side pane, showing usage and pace per model pool" width="420">
+
 ## Two ways to view it
 
 1. **Floating Above-Chat HUD (`Elemental HUD.app` on macOS):**
@@ -42,6 +46,13 @@ bash ~/.gemini/config/plugins/antigravity-agent-panel/hud/build-hud.sh
 open -a "$HOME/Applications/Elemental HUD.app"
 ```
 
+## Requirements
+
+- macOS (the floating HUD is a Swift app; the side-pane plugin runs anywhere Antigravity does)
+- Google Antigravity, signed in, with at least one chat open so a language server is running
+- Node.js installed in `/opt/homebrew/bin`, `/usr/local/bin` or `/usr/bin` (the HUD looks there to start the backend)
+- Xcode command line tools to build the HUD (`xcode-select --install`)
+
 ## How it works
 
 The backend (`sidecars/agent_panel/main.mjs`) runs inside Antigravity's `SidecarApp` or standalone on `127.0.0.1:47812` when launched by `Elemental HUD.app`:
@@ -49,3 +60,30 @@ The backend (`sidecars/agent_panel/main.mjs`) runs inside Antigravity's `Sidecar
 - Queries `LanguageServerService/GetUserStatus` and `GetAllCascadeTrajectories` on the active daemon port (`~/.gemini/antigravity/daemon/hub_*.json`).
 - Reads `brain/<conversationId>/.system_generated/logs/transcript.jsonl` (and `swarm/members.json`) across `~/.gemini/antigravity`, `~/.gemini/antigravity-ide`, and `~/.gemini/antigravity-cli`.
 - Persists 5h quota cycle snapshots to `~/.gemini/antigravity/sidecar_data/antigravity-agent-panel/weekly-ledger.json` so `7d Weekly` stays accurate across resets.
+
+## How quota sync works
+
+Antigravity's language server already knows your quota. The panel asks it rather than guessing.
+
+1. **Find the server.** Each running Antigravity flavor writes a daemon file under `~/.gemini/antigravity*/daemon/*.json` with an `httpPort` and a `csrfToken`. The backend reads those and calls the server on `127.0.0.1` with the token in the `x-codeium-csrf-token` header. The panel itself makes no network calls beyond that local server.
+2. **Ask for the summary.** `LanguageServerService/RetrieveUserQuotaSummary` returns quota groups, each holding one or more buckets with a remaining fraction and a reset time. The panel sorts groups into three pools: Argon, Claude / OSS, and Hydrogen / Flash.
+3. **Split the windows.** A bucket whose `window` is `weekly` (or whose id contains `weekly`) is the 7-day bucket. Everything else is the rolling 5-hour bucket. Each pool shows its own native window, so Argon reads `7d` while Hydrogen reads `5h`, and the meta line carries the other one.
+4. **Work out the pace.** For each bucket, `pace = % used / % of window elapsed`. The verdict follows from that number:
+
+   | Pace | Verdict |
+   |---|---|
+   | under 0.2% used | Fresh |
+   | below 0.85 | Under pace |
+   | 0.85 to 1.0 | On pace |
+   | above 1.0 | Ahead of pace |
+   | above 1.15 | Over pace |
+
+   The tick on each bar marks where usage would sit if you spent evenly across the window.
+5. **Fall back when needed.** If the summary call fails, the panel reads `GetUserStatus` instead and groups each model's `quotaInfo` by reset time. You lose the weekly split but keep the 5-hour numbers.
+6. **Keep a ledger.** Every 5-hour snapshot is written to `weekly-ledger.json` in the sidecar data folder, so the `7d` view survives resets and app restarts. Token totals for the same 7 days come from each conversation's `transcript.jsonl`.
+
+The standalone server listens on `127.0.0.1` only, sends no CORS headers, and rejects any request whose `Host` is not `127.0.0.1` or `localhost`, so a web page can't read your chat titles through DNS rebinding.
+
+## License
+
+[MIT](LICENSE)

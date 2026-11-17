@@ -118,6 +118,7 @@ html, body {
 }
 
 button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+button:focus-visible { outline: 2px solid var(--hud-primary); outline-offset: 2px; }
 .hidden { display: none !important; }
 .mono { font-family: var(--hud-mono); font-variant-numeric: tabular-nums; }
 .muted { color: var(--hud-muted); }
