@@ -4,6 +4,14 @@
  */
 (function (root) {
   const ELEMENTS = {
+    neon: {
+      id: 'neon',
+      num: '10',
+      sym: 'Ne',
+      name: 'Neon',
+      shape: 'neon',
+      flavor: 'Luminous noble plasma cell, twin glowing orbit',
+    },
     hydrogen: {
       id: 'hydrogen',
       num: '1',
@@ -48,6 +56,7 @@
 
   function elementForModel(model) {
     const s = String(model || '').toLowerCase();
+    if (s.includes('neon')) return ELEMENTS.neon;
     if (s.includes('argon') || s.includes('orchestrator')) return ELEMENTS.argon;
     if (s.includes('carbon')) return ELEMENTS.carbon;
     if (s.includes('flash')) return ELEMENTS.flash;
@@ -93,6 +102,20 @@
   }
 
   function bodyPixels(shape, B, S, H, F) {
+    if (shape === 'neon') {
+      return (
+        R(10, 7, 8, 1, H) +
+        R(8, 8, 12, 1.5, H) +
+        R(7, 9.5, 14, 1.5, B) +
+        R(6, 11, 16, 5.5, B) +
+        R(7, 16.5, 14, 2, B) +
+        R(9, 18.5, 10, 1.5, S) +
+        R(7.5, 10, 1.5, 5, H) +
+        R(19, 10, 1.5, 5, F) +
+        R(10, 9, 5, 1, H) +
+        R(17, 16, 3, 2, S)
+      );
+    }
     if (shape === 'droplet') {
       return (
         R(13, 6.5, 2, 1, H) +
@@ -143,6 +166,9 @@
 
   function orbitalLayer(elId, live, SP, H) {
     if (!live) return '';
+    if (elId === 'neon') {
+      return `<g>${xform('rotate', '0 14 14;360 14 14', '2.4s')}${sparkGlyph(23.5, 12, SP)}${R(3.5, 14.5, 1.6, 1.6, H, anim('opacity', '0.4;1;0.4', '0.9s'))}</g>`;
+    }
     if (elId === 'hydrogen') {
       return `<g>${xform('rotate', '0 14 14;360 14 14', '2.8s')}${sparkGlyph(23.5, 13.5, SP)}</g>`;
     }

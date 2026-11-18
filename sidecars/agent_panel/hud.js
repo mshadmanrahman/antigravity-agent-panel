@@ -95,7 +95,7 @@
     const s = String(mainModel || '').toLowerCase();
     if (s.includes('argon')) return pools.find((p) => p.name.includes('Argon')) || pools[0];
     if (s.includes('claude') || s.includes('gpt')) return pools.find((p) => p.name.includes('Claude')) || pools[0];
-    return pools.find((p) => p.name.includes('Hydrogen')) || pools[0];
+    return pools.find((p) => p.name.includes('Neon') || p.name.includes('Hydrogen')) || pools[0];
   }
 
   function renderCrew(snap) {
@@ -138,7 +138,7 @@
       return;
     }
     const pools = quota.pools || [];
-    const mainModel = liveSelectedModel || snap.agents?.[0]?.model || 'Hydrogen';
+    const mainModel = liveSelectedModel || snap.agents?.[0]?.model || 'Neon';
     const focus = findFocusPool(pools, mainModel);
 
     if (!focus) {
@@ -151,11 +151,12 @@
     const timeLeftPct = Math.max(1, Math.min(99, 100 - (focus.elapsedPct || 0)));
     const weekly = focus.weekly;
     const weeklyTip = weekly ? ` · Weekly: ${weekly.remainingPct}% left (${fmtLeft(weekly.leftMs)})` : '';
+    const focusTitle = focus.name.includes('Neon') ? 'Neon / H' : focus.name.split(' / ')[0];
 
     el.innerHTML = `
       <div class="q-focus" title="${esc(focus.name)} (${esc(focus.windowLabel)}): ${focus.remainingPct}% quota left vs ${timeLeftPct}% window time left${esc(weeklyTip)}">
         <div class="q-focus-top">
-          <span class="q-title">${esc(focus.name.split(' / ')[0])} · ${esc(focus.windowLabel)}</span>
+          <span class="q-title">${esc(focusTitle)} · ${esc(focus.windowLabel)}</span>
           <span class="q-meta mono">${esc(focusRight)}</span>
         </div>
         <div class="meter-track">
@@ -233,7 +234,7 @@
     if (!mini || !spriteEl || !arc || !pctEl) return;
 
     const main = snap.agents?.[0];
-    const mainModel = liveSelectedModel || main?.model || 'Hydrogen';
+    const mainModel = liveSelectedModel || main?.model || 'Neon';
     const elem = elementForModel(mainModel);
     const colorVar = `var(--el-${elem.id}-body)`;
     const pools = snap.quota?.pools || [];

@@ -22,6 +22,7 @@ vm.runInNewContext(readFileSync(join(app, 'characters.js'), 'utf8'), sandbox);
 const { renderCharacterSvg, dotsSvg } = sandbox.window.AgentCharacters;
 
 const models = {
+  neon: 'Gemini 4 Neon',
   hydrogen: 'Gemini 4 Hydrogen',
   argon: 'Gemini 4 Argon',
   carbon: 'Gemini 4 Carbon',

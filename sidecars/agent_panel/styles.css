@@ -24,6 +24,13 @@
   --ap-mono: var(--editor-font-family, "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, monospace);
 
   /* Light-mode element palettes (richer contrast against white/light gray) */
+  --el-neon-body: #0D9488;
+  --el-neon-shade: #0F766E;
+  --el-neon-hi: #CCFBF1;
+  --el-neon-facet: #2DD4BF;
+  --el-neon-spark: #0D9488;
+  --el-neon-eye: #042F2E;
+
   --el-hydrogen-body: #078EFA;
   --el-hydrogen-shade: #0B57D0;
   --el-hydrogen-hi: #C2E7FF;
@@ -77,6 +84,13 @@
   --ap-hover: color-mix(in srgb, var(--ap-fg) 6%, transparent);
 
   /* Dark-mode element palettes (luminous sky/airy tones) */
+  --el-neon-body: #2EE6B8;
+  --el-neon-shade: #0E8A6E;
+  --el-neon-hi: #C7FFF0;
+  --el-neon-facet: #6AF2CE;
+  --el-neon-spark: #A7F3D0;
+  --el-neon-eye: #04241E;
+
   --el-hydrogen-body: #3B9EFF;
   --el-hydrogen-shade: #1665C1;
   --el-hydrogen-hi: #C2E7FF;
@@ -273,6 +287,7 @@ button:focus-visible { outline: 2px solid var(--ap-primary); outline-offset: 2px
   background: var(--ap-fill); color: var(--ap-fg-muted);
   flex: none;
 }
+.badge.el-neon { color: var(--el-neon-body); }
 .badge.el-hydrogen { color: var(--el-hydrogen-body); }
 .badge.el-argon { color: var(--el-argon-body); }
 .badge.el-flash { color: var(--el-flash-body); }

@@ -38,12 +38,12 @@ const pool = (name, label, usedPct, elapsedPct, leftH, models, weeklyUsed, weekl
   return { name, ...own, weekly };
 };
 
-const MAIN = 'Gemini 4 Argon';
+const MAIN = 'Gemini 4 Neon (High)';
 const TASK = 'Build a recipe search page';
 const quota = (h, a, c) => ({
   planName: 'Pro', promptCredits: 500, flowCredits: 100, monthlyPromptCredits: 50000, monthlyFlowCredits: 150000,
   pools: [
-    pool('Hydrogen / Flash', '5h', h, 46, 2.7, ['Hydrogen', '3.8 Flash'], 41, 52),
+    pool('Neon / H / Flash', '5h', h, 46, 2.7, ['Neon', 'Hydrogen', '3.8 Flash'], 41, 52),
     pool('Argon', '7d', 0, 0, 0, ['Argon'], a, 52),
     pool('Claude / OSS', '5h', c, 46, 2.7, ['Claude Opus', 'Claude Sonnet', 'GPT-OSS'], 12, 52),
   ],
@@ -54,11 +54,11 @@ const stages = {
   idle: [[agent('main', 'main', MAIN, 'waiting', TASK, 'Ready for prompt', 42000, 4, 0)], quota(22, 44, 6)],
   plan: [[
     agent('main', 'main', MAIN, 'working', TASK, 'Planning the work', 118000, 12, 2),
-    agent('a1', 'architect', 'Gemini 4 Carbon', 'working', 'Plan the search page', 'Reading the recipe schema', 64000, 7, 1),
+    agent('a1', 'architect', 'Gemini 4 Argon', 'working', 'Plan the search page', 'Reading the recipe schema', 64000, 7, 1),
   ], quota(31, 47, 6)],
   build: [[
     agent('main', 'main', MAIN, 'working', TASK, 'Coordinating 3 agents', 236000, 24, 6),
-    agent('a1', 'architect', 'Gemini 4 Carbon', 'done', 'Plan the search page', 'Plan written', 98000, 10, 3),
+    agent('a1', 'architect', 'Gemini 4 Argon', 'done', 'Plan the search page', 'Plan written', 98000, 10, 3),
     agent('a2', 'developer', 'Gemini 4 Hydrogen (High)', 'working', 'Build the search filters', 'Editing filters.tsx', 154000, 16, 3),
     agent('a3', 'browser', 'Gemini 3.8 Flash', 'working', 'Check the page in a browser', 'Opening localhost:3000', 41000, 5, 1),
   ], quota(48, 51, 6)],

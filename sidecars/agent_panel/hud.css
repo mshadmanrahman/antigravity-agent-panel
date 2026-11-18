@@ -19,6 +19,13 @@
   --hud-font: "Google Sans Flex", "Google Sans", system-ui, -apple-system, sans-serif;
   --hud-mono: "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, monospace;
 
+  --el-neon-body: #0D9488;
+  --el-neon-shade: #0F766E;
+  --el-neon-hi: #CCFBF1;
+  --el-neon-facet: #2DD4BF;
+  --el-neon-spark: #0D9488;
+  --el-neon-eye: #042F2E;
+
   --el-hydrogen-body: #078EFA;
   --el-hydrogen-shade: #0B57D0;
   --el-hydrogen-hi: #C2E7FF;
@@ -68,6 +75,13 @@
   --hud-success: #4cc38a;
   --hud-warning: #e0a44a;
   --hud-danger: #e5534b;
+
+  --el-neon-body: #2EE6B8;
+  --el-neon-shade: #0E8A6E;
+  --el-neon-hi: #C7FFF0;
+  --el-neon-facet: #6AF2CE;
+  --el-neon-spark: #A7F3D0;
+  --el-neon-eye: #04241E;
 
   --el-hydrogen-body: #3B9EFF;
   --el-hydrogen-shade: #1665C1;

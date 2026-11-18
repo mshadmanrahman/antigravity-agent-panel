@@ -99,11 +99,12 @@
   function renderLegend() {
     const box = $('legend-box');
     const items = [
-      { el: ELEMENTS.hydrogen, model: 'Gemini 4 Hydrogen', persona: 'main' },
+      { el: ELEMENTS.neon, model: 'Gemini 4 Neon', persona: 'main' },
+      { el: ELEMENTS.hydrogen, model: 'Gemini 4 Hydrogen', persona: 'developer' },
       { el: ELEMENTS.argon, model: 'Orchestrator (Argon)', persona: 'architect' },
       { el: ELEMENTS.flash, model: 'Gemini 3.8 Flash', persona: 'scout' },
       { el: ELEMENTS.carbon, model: 'Gemini 4 Carbon', persona: 'reviewer' },
-      { el: ELEMENTS.guest, model: 'Claude 5.5', persona: 'developer' },
+      { el: ELEMENTS.guest, model: 'Claude 5.5', persona: 'shipper' },
     ];
     box.innerHTML = items
       .map(
@@ -251,7 +252,7 @@
 
     const list = $('crew-list');
     if (!snap.agents?.length) {
-      list.innerHTML = `<div class="empty-state">No active conversation transcript yet. Send a message in Antigravity to wake your Hydrogen crew.</div>`;
+      list.innerHTML = `<div class="empty-state">No active conversation transcript yet. Send a message in Antigravity to wake your Elemental crew.</div>`;
     } else {
       list.innerHTML = snap.agents.map(renderAgentRow).join('');
     }

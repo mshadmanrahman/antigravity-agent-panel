@@ -25,7 +25,7 @@ const cards = [
 document.getElementById('g').innerHTML = cards.map(([t, cls, left, timeLeft, col, head, text]) => `
   <div>
     <div class="quota-card">
-      <div class="quota-top"><span class="quota-name">Hydrogen / Flash <span class="muted mono" style="font-weight:400">(5h)</span></span><span class="verdict ${cls}">${t}</span></div>
+      <div class="quota-top"><span class="quota-name">Neon / H / Flash <span class="muted mono" style="font-weight:400">(5h)</span></span><span class="verdict ${cls}">${t}</span></div>
       <div class="meter-track"><div class="meter-fill" style="width:${left}%;background:${col}"></div><div class="meter-marker" style="left:${timeLeft}%"></div></div>
       <div class="quota-meta mono"><span>${left}% left</span><span>${timeLeft}% time left</span></div>
     </div>

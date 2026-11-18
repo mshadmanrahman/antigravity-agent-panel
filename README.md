@@ -44,21 +44,22 @@ The element is picked by the model the agent runs on.
 
 | | Element | Model |
 |:---:|---|---|
-| <img src="assets/crew/hydrogen-main-working.svg" width="56" alt="Hydrogen"> | **1 H, Hydrogen** | Gemini 4 Hydrogen (the default) |
-| <img src="assets/crew/argon-main-working.svg" width="56" alt="Argon"> | **18 Ar, Argon** | Gemini 4 Argon and Orchestrator |
+| <img src="assets/crew/neon-main-working.svg" width="56" alt="Neon"> | **10 Ne, Neon** | Gemini 4 Neon and Orchestrator (Neon) |
+| <img src="assets/crew/hydrogen-main-working.svg" width="56" alt="Hydrogen"> | **1 H, Hydrogen** | Gemini 4 Hydrogen |
+| <img src="assets/crew/argon-main-working.svg" width="56" alt="Argon"> | **18 Ar, Argon** | Gemini 4 Argon and Orchestrator (Argon) |
 | <img src="assets/crew/carbon-main-working.svg" width="56" alt="Carbon"> | **6 C, Carbon** | Gemini 4 Carbon |
 | <img src="assets/crew/flash-main-working.svg" width="56" alt="Flash"> | **3.8 Flash** | Gemini 3.8 Flash |
 | <img src="assets/crew/guest-main-working.svg" width="56" alt="Guest"> | **Guest** | Claude, GPT and open models |
 
 The outfit is picked by the job the agent was given.
 
-| <img src="assets/crew/hydrogen-main-working.svg" width="56" alt="Coordinator"> | <img src="assets/crew/hydrogen-architect-working.svg" width="56" alt="Architect"> | <img src="assets/crew/hydrogen-developer-working.svg" width="56" alt="Builder"> | <img src="assets/crew/hydrogen-reviewer-working.svg" width="56" alt="Reviewer"> | <img src="assets/crew/hydrogen-scout-working.svg" width="56" alt="Scout"> | <img src="assets/crew/hydrogen-browser-working.svg" width="56" alt="Browser"> | <img src="assets/crew/hydrogen-shipper-working.svg" width="56" alt="Shipper"> |
+| <img src="assets/crew/neon-main-working.svg" width="56" alt="Coordinator"> | <img src="assets/crew/neon-architect-working.svg" width="56" alt="Architect"> | <img src="assets/crew/neon-developer-working.svg" width="56" alt="Builder"> | <img src="assets/crew/neon-reviewer-working.svg" width="56" alt="Reviewer"> | <img src="assets/crew/neon-scout-working.svg" width="56" alt="Scout"> | <img src="assets/crew/neon-browser-working.svg" width="56" alt="Browser"> | <img src="assets/crew/neon-shipper-working.svg" width="56" alt="Shipper"> |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Coordinator | Architect | Builder | Reviewer | Scout | Browser | Shipper |
 
 And the face tells you the state.
 
-| <img src="assets/crew/hydrogen-developer-working.svg" width="56" alt="Working"> | <img src="assets/crew/hydrogen-developer-waiting.svg" width="56" alt="Waiting"> | <img src="assets/crew/hydrogen-developer-done.svg" width="56" alt="Done"> | <img src="assets/crew/hydrogen-developer-failed.svg" width="56" alt="Failed"> |
+| <img src="assets/crew/neon-developer-working.svg" width="56" alt="Working"> | <img src="assets/crew/neon-developer-waiting.svg" width="56" alt="Waiting"> | <img src="assets/crew/neon-developer-done.svg" width="56" alt="Done"> | <img src="assets/crew/neon-developer-failed.svg" width="56" alt="Failed"> |
 |:---:|:---:|:---:|:---:|
 | Working | Waiting for you | Done | Failed |
 
@@ -153,8 +154,8 @@ The backend (`sidecars/agent_panel/main.mjs`) runs inside Antigravity's `Sidecar
 Antigravity's language server already knows your quota. The panel asks it rather than guessing.
 
 1. **Find the server.** Each running Antigravity flavor writes a daemon file under `~/.gemini/antigravity*/daemon/*.json` with an `httpPort` and a `csrfToken`. The backend reads those and calls the server on `127.0.0.1` with the token in the `x-codeium-csrf-token` header. The panel itself makes no network calls beyond that local server.
-2. **Ask for the summary.** `LanguageServerService/RetrieveUserQuotaSummary` returns quota groups, each holding one or more buckets with a remaining fraction and a reset time. The panel sorts groups into three pools: Argon, Claude / OSS, and Hydrogen / Flash.
-3. **Split the windows.** A bucket whose `window` is `weekly` (or whose id contains `weekly`) is the 7-day bucket. Everything else is the rolling 5-hour bucket. Each pool shows its own native window, so Argon reads `7d` while Hydrogen reads `5h`, and the meta line carries the other one.
+2. **Ask for the summary.** `LanguageServerService/RetrieveUserQuotaSummary` returns quota groups, each holding one or more buckets with a remaining fraction and a reset time. The panel sorts groups into three pools: Argon, Claude / OSS, and Neon / H / Flash.
+3. **Split the windows.** A bucket whose `window` is `weekly` (or whose id contains `weekly`) is the 7-day bucket. Everything else is the rolling 5-hour bucket. Each pool shows its own native window, so Argon reads `7d` while Neon / H / Flash reads `5h`, and the meta line carries the other one.
 4. **Work out the pace.** For each bucket, `pace = % used / % of window elapsed`. The verdict follows from that number:
 
    | Pace | Verdict |

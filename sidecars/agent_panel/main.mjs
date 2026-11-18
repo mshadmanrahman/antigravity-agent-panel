@@ -192,6 +192,7 @@ async function callLsRpc(candidates, method, body = {}, ttlMs = 2000) {
 
 function familyOf(label) {
   const s = String(label || '').toLowerCase();
+  if (s.includes('neon')) return 'Neon';
   if (s.includes('hydrogen')) return 'Hydrogen';
   if (s.includes('argon')) return 'Argon';
   if (s.includes('carbon')) return 'Carbon';
@@ -204,7 +205,9 @@ function familyOf(label) {
 
 function summarizePoolName(families) {
   const uniq = [...new Set(families)];
-  if (uniq.includes('Hydrogen') && uniq.includes('3.8 Flash')) return 'Hydrogen / Flash';
+  if (uniq.includes('Neon') || (uniq.includes('Hydrogen') && uniq.includes('3.8 Flash'))) {
+    return 'Neon / H / Flash';
+  }
   if (uniq.includes('Argon')) return 'Argon';
   if (uniq.some((f) => f.startsWith('Claude')) || uniq.includes('GPT-OSS')) return 'Claude / OSS';
   return uniq.slice(0, 2).join(' / ');
@@ -249,7 +252,7 @@ function classifySummaryGroup(group) {
   if (text.includes('claude') || text.includes('gpt') || text.includes('3p')) {
     return { name: 'Claude / OSS', models: ['Claude Opus', 'Claude Sonnet', 'GPT-OSS'] };
   }
-  return { name: 'Hydrogen / Flash', models: ['Hydrogen', '3.8 Flash'] };
+  return { name: 'Neon / H / Flash', models: ['Neon', 'Hydrogen', '3.8 Flash'] };
 }
 
 function parseQuotaSummary(quotaSummary, now) {
@@ -423,7 +426,7 @@ function computeSevenDayRollup(appDirs, now) {
   const cutoff = now - WEEK_MS;
   let totalTokens7d = 0;
   let totalChats7d = 0;
-  const byPool = { 'Hydrogen / Flash': 0, Argon: 0, 'Claude / OSS': 0 };
+  const byPool = { 'Neon / H / Flash': 0, Argon: 0, 'Claude / OSS': 0 };
 
   for (const dir of appDirs) {
     const brainDir = join(dir, 'brain');
@@ -450,7 +453,7 @@ function computeSevenDayRollup(appDirs, now) {
       const m = String(parsed.model || '').toLowerCase();
       if (m.includes('argon')) byPool.Argon += parsed.totalTokens;
       else if (m.includes('claude') || m.includes('gpt')) byPool['Claude / OSS'] += parsed.totalTokens;
-      else byPool['Hydrogen / Flash'] += parsed.totalTokens;
+      else byPool['Neon / H / Flash'] += parsed.totalTokens;
     }
   }
 
@@ -494,7 +497,9 @@ function buildWeeklyQuotaView(appDirs, quota, now) {
       };
     }
 
-    const entry = ledger?.pools?.[p.name];
+    const entry =
+      ledger?.pools?.[p.name] ||
+      (p.name === 'Neon / H / Flash' ? ledger?.pools?.['Hydrogen / Flash'] : null);
     const cycles = entry?.cycles || [];
     const avgUsed = cycles.length
       ? Math.round((cycles.reduce((s, c) => s + (c.maxUsedPct || 0), 0) / cycles.length) * 10) / 10
@@ -788,7 +793,7 @@ function buildPanelSnapshot(appDirs, convId, userStatus, quotaSummary, trajector
   const mainRunning =
     mainTraj?.status === 'CASCADE_RUN_STATUS_RUNNING' || Boolean(mainParsed?.inTurnSince);
 
-  const mainModel = mainParsed?.model || 'Gemini 4 Hydrogen (High)';
+  const mainModel = mainParsed?.model || 'Gemini 4 Neon (High)';
   const ctxWindow = modelWindow(mainModel);
   const mainCtx = mainParsed?.latestCtx || 0;
   const mainDurationMs =
